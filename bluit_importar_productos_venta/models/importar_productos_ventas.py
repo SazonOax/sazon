@@ -159,5 +159,5 @@ class importar_productos_ventas(models.TransientModel):
 											'product_uom':uom_obj_search.id,
 											})
 		elif sale_order_brw.state != 'sent' or sale_order_brw.state != 'draft':
-			return 'No se puede importar datos en una orden validada o confirmada'
+			raise UserError(_('No se puede importar datos en una orden validada o confirmada'))
 		return None
