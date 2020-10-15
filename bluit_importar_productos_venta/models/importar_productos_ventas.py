@@ -78,7 +78,7 @@ class importar_productos_ventas(models.TransientModel):
 
 			for row_no in range(sheet.nrows):
 				val = {}
-				print("numero", sheet.nrows)
+				print("numero", row_no)
 				if row_no <= 0:
 					fields = map(lambda row:row.value.encode('utf-8'), sheet.row(row_no))
 				else:
@@ -92,7 +92,7 @@ class importar_productos_ventas(models.TransientModel):
 									'name' : line[4],
 									'quantity' : line[5],
 									'uom' : line[6],
-									'row': row_no
+									'row': row_no+1
 								})
 					res = self.create_order_line(values)
 		return res
@@ -106,10 +106,16 @@ class importar_productos_ventas(models.TransientModel):
 		uom=values.get('uom')
 		row=values.get('row')
 		uom_obj_search=self.env['uom.uom'].search([('name','=',uom)])
-		print(uom_obj_search.factor)
-		print(uom_obj_search.factor_inv)
 		if not uom_obj_search:
 				raise Warning(_('La unidad de medida "%s" no esta disponible en el sistema. Fila: %s') % (uom,row ))
+		print("num row",values['row'])
+		print("size",len(uom_obj_search))
+		if len(uom_obj_search) > 1:
+			for item in uom_obj_search:
+				print("repetido", item.name)
+			uom_obj_search=uom_obj_search[0]
+		print(uom_obj_search.factor)
+		print(uom_obj_search.factor_inv)
 		print(product)
 		print(values['product'])
 		print(values['name'])
