@@ -31,7 +31,9 @@ class importar_productos_ventas(models.TransientModel):
 	import_prod_option = fields.Selection([('barcode', 'Código de barras'),('code', 'Código interno'),('name', 'Nombre del producto')],string='Buscar Producto por ',default='barcode')
 
 	def importar_productos(self):
-		res = False
+		res=[]
+		dato_error=False
+		resultado=""
 		if self.import_option == 'csv':
 			keys = ['f_alta_ped', 'SAZON', 'Consec.','Code_B', 'Producto', 'cant_Ped', 'unidad', 'Surtido', 'cant_surt', 'Tipo']
 			try:
@@ -86,7 +88,7 @@ class importar_productos_ventas(models.TransientModel):
 					line = list(map(lambda row:isinstance(row.value, bytes) and row.value.encode('utf-8') or str(row.value), sheet.row(row_no)))
 					if line[0]=="":
 						print("row_ no break", row_no)
-						return res
+						break
 					values.update({
 									'product' : line[3].split('.')[0],
 									'name' : line[4],
@@ -94,8 +96,17 @@ class importar_productos_ventas(models.TransientModel):
 									'uom' : line[6],
 									'row': row_no+1
 								})
-					res = self.create_order_line(values)
-		return res
+					resultado=self.create_order_line(values);
+					if resultado is not None:
+						dato_error=True
+						res.append(resultado)
+					
+		if dato_error:
+			texto='';
+			for item in res:
+				texto = texto + item + '\n'
+			raise Warning(_(texto))
+		return True
 
 	def create_order_line(self,values):
 		if not values:
@@ -107,18 +118,19 @@ class importar_productos_ventas(models.TransientModel):
 		row=values.get('row')
 		uom_obj_search=self.env['uom.uom'].search([('name','=',uom)])
 		if not uom_obj_search:
-				raise Warning(_('La unidad de medida "%s" no esta disponible en el sistema. Fila: %s') % (uom,row ))
-		print("num row",values['row'])
-		print("size",len(uom_obj_search))
+				return 'La unidad de medida "%s" no esta disponible en el sistema. Fila: %s' % (uom,row )
+		# print("num row",values['row'])
+		# print("size",len(uom_obj_search))
 		if len(uom_obj_search) > 1:
 			for item in uom_obj_search:
 				print("repetido", item.name)
 			uom_obj_search=uom_obj_search[0]
-		print(uom_obj_search.factor)
-		print(uom_obj_search.factor_inv)
-		print(product)
-		print(values['product'])
-		print(values['name'])
+		
+		# print(uom_obj_search.factor)
+		# print(uom_obj_search.factor_inv)
+		# print(product)
+		# print(values['product'])
+		# print(values['name'])
 		if self.import_prod_option == 'barcode':
 			product_obj_search=self.env['product.product'].search([('barcode',  '=',values['product'])])
 		elif self.import_prod_option == 'code':
@@ -129,8 +141,14 @@ class importar_productos_ventas(models.TransientModel):
 		if product_obj_search:
 			product_id=product_obj_search
 		else:
-			raise Warning(_('%s %s No se encontro el producto". Fila: %s') % (values.get('product'),values.get('name'),row))
-			
+			return '%s %s No se encontro el producto". Fila: %s' % (values.get('product'),values.get('name'),row)
+
+		# if 	uom_obj_search.category_id !== product_id.uom_id.
+		print("**")
+		print(uom_obj_search.category_id.measure_type,product_id.uom_id.measure_type)
+		print(uom_obj_search.category_id.name,product_id.uom_id.name)
+		if uom_obj_search.category_id.measure_type != product_id.uom_id.measure_type:
+			return "Las unidades de medida del producto"+values.get('product')+" "+values.get('name')+" no tienen la misma categoria. Fila: "+ str(row)+"."
 		if sale_order_brw.state == 'draft' or sale_order_brw.state == 'sent' :
 			order_lines=self.env['sale.order.line'].create({
 											'order_id':sale_order_brw.id,
@@ -142,4 +160,4 @@ class importar_productos_ventas(models.TransientModel):
 											})
 		elif sale_order_brw.state != 'sent' or sale_order_brw.state != 'draft':
 			raise UserError(_('No se puede importar datos en una orden validada o confirmada'))
-		return True
+		return None
