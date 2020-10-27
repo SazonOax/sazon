@@ -149,6 +149,8 @@ class importar_productos_ventas(models.TransientModel):
 		print(uom_obj_search.category_id.name,product_id.uom_id.name)
 		if uom_obj_search.category_id.measure_type != product_id.uom_id.measure_type:
 			return "Las unidades de medida del producto"+values.get('product')+" "+values.get('name')+" no tienen la misma categoria. Fila: "+ str(row)+"."
+		if len(product_id) > 1:
+			return "El producto '"+ product_id[0].name +"' se encuentra repetido en la base de datos de Odoo";
 		if sale_order_brw.state == 'draft' or sale_order_brw.state == 'sent' :
 			order_lines=self.env['sale.order.line'].create({
 											'order_id':sale_order_brw.id,
