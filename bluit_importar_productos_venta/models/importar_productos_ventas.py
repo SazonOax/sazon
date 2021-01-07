@@ -81,10 +81,10 @@ class importar_productos_ventas(models.TransientModel):
 			for row_no in range(sheet.nrows):
 				val = {}
 				print("numero", row_no)
-				if row_no <= 0:
+				if row_no <= 3:
 					fields = map(lambda row:row.value.encode('utf-8'), sheet.row(row_no))
 				else:
-					row_no=row_no+2
+					# row_no=row_no+2
 					line = list(map(lambda row:isinstance(row.value, bytes) and row.value.encode('utf-8') or str(row.value), sheet.row(row_no)))
 					if line[0]=="":
 						print("row_ no break", row_no)
