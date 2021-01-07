@@ -132,11 +132,17 @@ class importar_productos_ventas(models.TransientModel):
 		# print(values['product'])
 		# print(values['name'])
 		if self.import_prod_option == 'barcode':
-			product_obj_search=self.env['product.product'].search([('barcode',  '=',values['product'])])
+			product_obj_search=self.env['product.product'].search([('barcode',  '=',values.get('product'))])
+			if len(product_obj_search) > 1:
+				return "El producto '"+ product_obj_search[0].barcode +"' se encuentra repetido en la base de datos de Odoo Fila: "+ str(row)+".";
 		elif self.import_prod_option == 'code':
-			product_obj_search=self.env['product.product'].search([('default_code', '=',values['product'])])
+			product_obj_search=self.env['product.product'].search([('default_code', '=',values.get('product'))])
+			if len(product_obj_search) > 1:
+				return "El producto '"+ product_obj_search[0].default_code +"' se encuentra repetido en la base de datos de Odoo Fila: "+ str(row)+".";
 		else:
-			product_obj_search=self.env['product.product'].search([('name', '=',values['name'])])
+			product_obj_search=self.env['product.product'].search([('name', '=',values.get('name'))])
+			if len(product_obj_search) > 1:
+				return "El producto '"+ product_obj_search[0].name +"' se encuentra repetido en la base de datos de Odoo Fila: "+ str(row)+".";
 			
 		if product_obj_search:
 			product_id=product_obj_search
@@ -144,13 +150,11 @@ class importar_productos_ventas(models.TransientModel):
 			return '%s %s No se encontro el producto". Fila: %s' % (values.get('product'),values.get('name'),row)
 
 		# if 	uom_obj_search.category_id !== product_id.uom_id.
-		print("**")
-		print(uom_obj_search.category_id.measure_type,product_id.uom_id.measure_type)
-		print(uom_obj_search.category_id.name,product_id.uom_id.name)
+		# print("**")
+		# print(uom_obj_search.category_id.measure_type,product_id.uom_id.measure_type)
+		# print(uom_obj_search.category_id.name,product_id.uom_id.name)
 		if uom_obj_search.category_id.measure_type != product_id.uom_id.measure_type:
 			return "Las unidades de medida del producto"+values.get('product')+" "+values.get('name')+" no tienen la misma categoria. Fila: "+ str(row)+"."
-		if len(product_id) > 1:
-			return "El producto '"+ product_id[0].name +"' se encuentra repetido en la base de datos de Odoo";
 		if sale_order_brw.state == 'draft' or sale_order_brw.state == 'sent' :
 			order_lines=self.env['sale.order.line'].create({
 											'order_id':sale_order_brw.id,
